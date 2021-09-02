@@ -1,5 +1,6 @@
 // Khai báo biến
 const $ = document.querySelector.bind(document);
+const $$ = document.querySelectorAll.bind(document);
 const playlist = $('.playlist');
 const currentSongName = $('.current-song-name');
 const cdThumb = $('.cd-thumb');
@@ -9,11 +10,16 @@ const pauseBtn = $('.icon-pause');
 const repeatBtn = $('.btn.btn-repeat');
 const randomBtn = $('.btn.btn-random');
 const audio = $('#audio');
+const progressInput = $('#progress');
+const previousBtn = $('.btn.btn-prev');
+const nextBtn = $('.btn.btn-next');
 
 
 // Đối tượng chứa toàn bộ chức năng của ứng dụng
 var app = {
     currentSongIndex: 0,
+    isRepeat: false,
+    isRandom: false,
     songs: [
         {
             "name": "Âm Thầm Bên Em",
@@ -139,12 +145,13 @@ var app = {
     start() {
         this.renderSong();
         this.config();
-        this.updateCurrentSongHeader();
         this.handleDOMEvents();
     },
     config() {
-        playBtn.classList.add('active');
-        this.handleActiveCurrentSongInPlaylist();
+        currentSongIndex = 0;
+        progressInput.value = '0';
+        this.toggleActiveTogglePlayBtn('paused');
+        this.handleUpdateCurrentSongInfos();
     },
     renderSong() {
         var htmls = this.songs.map(function (song) {
@@ -160,11 +167,8 @@ var app = {
             </div>`;
         });
 
+        // Hợp 1 mảng các chuỗi thành 1 chuỗi duy nhất và gán nó cho playlist.innerHTML
         playlist.innerHTML = htmls.join('');
-    },
-    updateCurrentSongHeader() {
-        currentSongName.innerHTML = `${this.songs[0].name}`;
-        cdThumb.style.backgroundImage = `url('${this.songs[0].image}')`
     },
     handleDOMEvents() {
         const _this = this;
@@ -173,22 +177,15 @@ var app = {
         togglePlayBtn.addEventListener('click', function (e) {
             // Nếu thẻ con của togglePlayBtn có chứa class 'icon-play' thì nút phát được click
             if (!! e.target.closest('.icon-play')) {
-                // Chuyển đổi sự ẩn hiện của 2 icon phát/dừng
-                playBtn.classList.toggle('active', false);
-                pauseBtn.classList.toggle('active', true);
-
-                _this.handlePlayCurrentSong();
+                _this.toggleActiveTogglePlayBtn('playing');
+                audio.play();
             }
             // Ngược lại, nút dừng được click
             else {
-                // Chuyển đổi sự ẩn hiện của 2 icon phát/dừng
-                playBtn.classList.toggle('active', true);
-                pauseBtn.classList.toggle('active', false);
-
+                _this.toggleActiveTogglePlayBtn('paused');
                 audio.pause();
             }
         });
-
 
         // Click vào nút phát lại/phát ngẫu nhiên
         repeatBtn.addEventListener('click', function (e) {
@@ -197,26 +194,150 @@ var app = {
 
             // Chuyển đổi trạng thái active
             repeatBtn.classList.toggle('active', ! isActive);
+            _this.isRepeat = ! isActive;
+
+            // Gỡ class 'active' của nút random nếu có
+            if (randomBtn.classList.contains('active')) {
+                randomBtn.classList.remove('active');
+            }
+            _this.isRandom = false;
         });
 
         randomBtn.addEventListener('click', function (e) {
+            // Kiểm tra nút hiện tại có đang active không ?
             var isActive = !! (e.target.closest('.active'));
+
+            // Chuyển đổi trạng thái active
             randomBtn.classList.toggle('active', ! isActive);
+            _this.isRandom = ! isActive;
+
+            // Gỡ class 'active' của nút repeat nếu có
+            if (repeatBtn.classList.contains('active')) {
+                repeatBtn.classList.remove('active');
+            }
+            _this.isRepeat = false;
         });
+
+        // Kéo thả input tiến độ bài hát
+        progressInput.addEventListener('change', function(e) {
+            audio.currentTime = audio.duration / 100 * Number(e.target.value)
+        });
+
+        // Click nút trở lại/tiếp theo để chọn bài hát trước đó/tiếp theo
+        previousBtn.addEventListener('click', function(e) {
+            var newCurrentSongIndex;
+
+            // Nếu như có nhấn nút random trước đó
+            if (_this.isRandom) {
+                do {
+                    // Random 1 số ngẫu nhiên từ 0 -> songs.length
+                    newCurrentSongIndex = Math.floor(Math.random() * _this.songs.length);
+                } while (newCurrentSongIndex == _this.currentSongIndex);
+            } else {
+                newCurrentSongIndex = (_this.currentSongIndex == 0) ? 
+                    (_this.songs.length-1) : (_this.currentSongIndex-1);
+            }
+            
+            // Cập nhật vị trí của bài hát mới
+            _this.currentSongIndex = newCurrentSongIndex;
+            _this.handleUpdateCurrentSongInfos();
+            _this.toggleActiveTogglePlayBtn('playing');
+            audio.play();
+        });
+
+        nextBtn.addEventListener('click', function(e) {
+            var newCurrentSongIndex;
+
+            // Nếu như có nhấn nút random trước đó
+            if (_this.isRandom) {
+                do {
+                    // Random 1 số ngẫu nhiên từ 0 -> songs.length
+                    newCurrentSongIndex = Math.floor(Math.random() * _this.songs.length);
+                } while (newCurrentSongIndex == _this.currentSongIndex);
+            } else {
+                newCurrentSongIndex = (_this.currentSongIndex == _this.songs.length-1) ? 
+                    0 : (_this.currentSongIndex+1);
+            }
+            
+            // Cập nhật vị trí của bài hát mới
+            _this.currentSongIndex = newCurrentSongIndex;
+            _this.handleUpdateCurrentSongInfos();
+            _this.toggleActiveTogglePlayBtn('playing');
+            audio.play();
+        });
+
+        // Tự động chuyển bài hát mới khi hết bài hát cũ
+        audio.addEventListener('ended', function (e) {
+            var newCurrentSongIndex;
+
+            if (_this.isRepeat) {
+                newCurrentSongIndex = _this.currentSongIndex;
+            } else {
+                if (_this.isRandom) {
+                    do {
+                        // Random một số ngẫu nhiên từ 0 -> songs.length để gán cho biến newCurrentSongIndex
+                        newCurrentSongIndex = Math.floor(Math.random() * _this.songs.length);
+                    } while (newCurrentSongIndex == _this.currentSongIndex);
+                } else {
+                    newCurrentSongIndex = (_this.currentSongIndex == _this.songs.length-1) ? 
+                        0 : (_this.currentSongIndex+1);
+                }
+            }
+    
+            _this.currentSongIndex = newCurrentSongIndex;
+            _this.handleUpdateCurrentSongInfos();
+            _this.toggleActiveTogglePlayBtn('playing');
+            audio.play();
+        });
+
+        // Khi bài hát phát thì cập nhật thanh tiến độ
+        audio.addEventListener('timeupdate', function (e) {
+            if (audio.duration) {
+                progressInput.value = String(Math.floor(audio.currentTime / audio.duration * 100));
+            }
+        });
+
+        // Khi click vào bài hát trong danh sách (playlist) 
+        const songsArray = $$('.song');
+        songsArray.forEach(function(song, index) {
+            song.addEventListener('click', function (e) {
+                if (! e.target.classList.contains('fa-ellipsis-h') && _this.currentSongIndex != index) {
+                    _this.currentSongIndex = index;
+                    _this.handleUpdateCurrentSongInfos();
+                    _this.toggleActiveTogglePlayBtn('playing');
+                    audio.play();
+                }
+            })
+        })
+
     },
-    handlePlayCurrentSong() {
+    handleUpdateCurrentSongInfos() {
+        this.updateCurrentSong();
+        this.handleActiveCurrentSongInPlaylist();
+    },
+    updateCurrentSong() {
         currentSongName.innerHTML = this.songs[this.currentSongIndex].name;
         cdThumb.style.backgroundImage = `url(${this.songs[this.currentSongIndex].image})`;
         audio.src = `${this.songs[this.currentSongIndex].audio}`;
-        audio.play();
     },
     handleActiveCurrentSongInPlaylist() {
         var currentSongInPlaylist = $(`.song:nth-child(${this.currentSongIndex + 1})`);
-
-        if($('.song.active')) {
+        // Gỡ có bài hát nào đang active thì xóa class 'active' đó
+        if ($('.song.active')) {
             $('.song.active').classList.remove('active');
         }
+        // Thêm class 'active' cho bài hát hiện tại trong danh sách
         currentSongInPlaylist.classList.add('active');
+    },
+    toggleActiveTogglePlayBtn(status) {
+        // status value: 'paused' / 'playing'
+        if (status == 'playing') {
+            playBtn.classList.toggle('active', false);
+            pauseBtn.classList.toggle('active', true);
+        } else {
+            playBtn.classList.toggle('active', true);
+            pauseBtn.classList.toggle('active', false);
+        }
     }
 }
 
