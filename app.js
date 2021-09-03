@@ -303,7 +303,8 @@ var app = {
         const songsArray = $$('.song');
         songsArray.forEach(function(song, index) {
             song.addEventListener('click', function (e) {
-                if (! e.target.classList.contains('fa-ellipsis-h') && _this.currentSongIndex != index) {
+                // Nếu click vào bài hát (ngoại trừ phần option và bài hát hiện tại)
+                if (! e.target.closest('.option') && _this.currentSongIndex != index) {
                     _this.currentSongIndex = index;
                     _this.playAudio();
                 }
