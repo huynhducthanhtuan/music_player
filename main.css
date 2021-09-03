@@ -182,7 +182,7 @@ header {
 .song .title {
     font-size: 18px;
     color: var(--text-color);
-    max-height: 26.7px;
+    max-height: 30px;
     display: -webkit-box;
     overflow: hidden;
     text-overflow: ellipsis;
