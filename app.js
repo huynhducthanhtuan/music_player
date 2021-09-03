@@ -1,5 +1,4 @@
 // Khai báo biến
-const PLAYER_STORAGE_KEY = 'HDTT';
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
 const playlist = $('.playlist');
@@ -15,6 +14,9 @@ const audio = $('#audio');
 const progressInput = $('#progress');
 const previousBtn = $('.btn.btn-prev');
 const nextBtn = $('.btn.btn-next');
+
+// localStorage Key
+const PLAYER_STORAGE_KEY = 'HDTT';
 
 
 // Đối tượng chứa toàn bộ thông tin và chức năng của ứng dụng
