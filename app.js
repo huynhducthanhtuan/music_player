@@ -190,6 +190,8 @@ var app = {
         // Dừng CD, hiển thị nút pause, xử lí cập nhật những thông tin của bài hát hiện tại
         this.cdThumbAnimate.pause();
         this.toggleActiveTogglePlayBtn('paused');
+        repeatBtn.classList.toggle('active', this.isRepeat);
+        randomBtn.classList.toggle('active', this.isRandom);
         this.handleUpdateCurrentSongInfos();
     },
     handleDOMEvents() {
