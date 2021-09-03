@@ -3,6 +3,7 @@ const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
 const playlist = $('.playlist');
 const currentSongName = $('.current-song-name');
+const cd = $('.cd');
 const cdThumb = $('.cd-thumb');
 const togglePlayBtn = $('.btn.btn-toggle-play');
 const playBtn = $('.icon-play');
@@ -20,6 +21,12 @@ var app = {
     currentSongIndex: 0,
     isRepeat: false,
     isRandom: false,
+    cdThumbAnimate: cdThumb.animate([
+        { transform: 'rotate(360deg)' },
+    ], { 
+        duration: 10000,
+        iterations: Infinity
+    }),
     songs: [
         {
             "name": "Âm Thầm Bên Em",
@@ -148,7 +155,7 @@ var app = {
         this.handleDOMEvents();
     },
     config() {
-        currentSongIndex = 0;
+        this.currentSongIndex = 0;
         progressInput.value = '0';
         this.toggleActiveTogglePlayBtn('paused');
         this.handleUpdateCurrentSongInfos();
@@ -177,13 +184,11 @@ var app = {
         togglePlayBtn.addEventListener('click', function (e) {
             // Nếu thẻ con của togglePlayBtn có chứa class 'icon-play' thì nút phát được click
             if (!! e.target.closest('.icon-play')) {
-                _this.toggleActiveTogglePlayBtn('playing');
-                audio.play();
+                _this.resumePlayAudio();
             }
             // Ngược lại, nút dừng được click
             else {
-                _this.toggleActiveTogglePlayBtn('paused');
-                audio.pause();
+                _this.pauseAudio();
             }
         });
 
@@ -218,6 +223,9 @@ var app = {
             _this.isRepeat = false;
         });
 
+        // Xử lí cho CD quay
+        _this.cdThumbAnimate.pause();
+
         // Kéo thả input tiến độ bài hát
         progressInput.addEventListener('change', function(e) {
             audio.currentTime = audio.duration / 100 * Number(e.target.value)
@@ -240,9 +248,7 @@ var app = {
             
             // Cập nhật vị trí của bài hát mới
             _this.currentSongIndex = newCurrentSongIndex;
-            _this.handleUpdateCurrentSongInfos();
-            _this.toggleActiveTogglePlayBtn('playing');
-            audio.play();
+            _this.playAudio();
         });
 
         nextBtn.addEventListener('click', function(e) {
@@ -261,9 +267,7 @@ var app = {
             
             // Cập nhật vị trí của bài hát mới
             _this.currentSongIndex = newCurrentSongIndex;
-            _this.handleUpdateCurrentSongInfos();
-            _this.toggleActiveTogglePlayBtn('playing');
-            audio.play();
+            _this.playAudio();
         });
 
         // Tự động chuyển bài hát mới khi hết bài hát cũ
@@ -285,9 +289,7 @@ var app = {
             }
     
             _this.currentSongIndex = newCurrentSongIndex;
-            _this.handleUpdateCurrentSongInfos();
-            _this.toggleActiveTogglePlayBtn('playing');
-            audio.play();
+            _this.playAudio();
         });
 
         // Khi bài hát phát thì cập nhật thanh tiến độ
@@ -303,31 +305,56 @@ var app = {
             song.addEventListener('click', function (e) {
                 if (! e.target.classList.contains('fa-ellipsis-h') && _this.currentSongIndex != index) {
                     _this.currentSongIndex = index;
-                    _this.handleUpdateCurrentSongInfos();
-                    _this.toggleActiveTogglePlayBtn('playing');
-                    audio.play();
+                    _this.playAudio();
                 }
             })
-        })
-
+        });
+    },
+    resumePlayAudio() {
+        this.toggleActiveTogglePlayBtn('playing');
+        this.cdThumbAnimate.play();
+        audio.play();
+    },
+    playAudio() {
+        this.handleUpdateCurrentSongInfos();
+        this.toggleActiveTogglePlayBtn('playing');
+        this.cdThumbAnimate.play();
+        audio.play();
+    },
+    pauseAudio() {
+        this.toggleActiveTogglePlayBtn('paused');
+        this.cdThumbAnimate.pause();
+        audio.pause();
     },
     handleUpdateCurrentSongInfos() {
         this.updateCurrentSong();
-        this.handleActiveCurrentSongInPlaylist();
+        this.handleScrollIntoViewAndActiveCurrentSongInPlaylist();
     },
     updateCurrentSong() {
         currentSongName.innerHTML = this.songs[this.currentSongIndex].name;
         cdThumb.style.backgroundImage = `url(${this.songs[this.currentSongIndex].image})`;
         audio.src = `${this.songs[this.currentSongIndex].audio}`;
     },
-    handleActiveCurrentSongInPlaylist() {
+    handleScrollIntoViewAndActiveCurrentSongInPlaylist() {
+        // 1.Gỡ - thêm class 'active' cho bài hát
         var currentSongInPlaylist = $(`.song:nth-child(${this.currentSongIndex + 1})`);
-        // Gỡ có bài hát nào đang active thì xóa class 'active' đó
+
+        // Bài hát nào đang active thì xóa class 'active' đó
         if ($('.song.active')) {
             $('.song.active').classList.remove('active');
         }
         // Thêm class 'active' cho bài hát hiện tại trong danh sách
         currentSongInPlaylist.classList.add('active');
+
+
+        // 2.Cuộn đến bài hát được active
+        var aSongElementHeight = $('.song').clientHeight;
+
+        // Lấy chiều cao của 'this.currentSongIndex' bài hát và cộng với khoảng cách giữa các bài hát tương ứng
+        // Nếu this.currentSongIndex = 5 thì lấy 5 lần chiều cao của 1 bài hát và cộng với 25 
+        // để ra được chiều cao cần thiết cho việc cuộn đến vị trí bài hát hiện tại
+        var neededHeight = (this.currentSongIndex * aSongElementHeight) + (this.currentSongIndex * 5);
+        window.scrollTo(0, neededHeight);
     },
     toggleActiveTogglePlayBtn(status) {
         // status value: 'paused' / 'playing'
