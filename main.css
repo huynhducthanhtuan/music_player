@@ -208,8 +208,12 @@ header {
 }
 
 @media (max-width: 739px) {
+    .control .btn-toggle-play {
+        width: 54px;
+        height: 54px;
+    }
     .song {
-        padding: 5px 8px 5px 4px;
+        padding: 10px 12px 10px 8px;
     }
     .song .body {
         padding: 0 6px;
