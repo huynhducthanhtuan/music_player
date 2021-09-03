@@ -222,8 +222,9 @@ var app = {
             }
             _this.isRandom = false;
 
-            // *Lưu trạng thái có nhấn nút phát lại không vào localStorage
+            // *Lưu trạng thái các nút phát lại, phát ngẫu nhiên vào localStorage
             _this.setConfig("isRepeatLS", _this.isRepeat);
+            _this.setConfig("isRandomLS", _this.isRandom);
         });
 
         randomBtn.addEventListener('click', function (e) {
@@ -240,7 +241,8 @@ var app = {
             }
             _this.isRepeat = false;
 
-            // *Lưu trạng thái có nhấn nút phát ngẫu nhiên không vào localStorage
+            // *Lưu trạng thái các nút phát lại, phát ngẫu nhiên vào localStorage
+            _this.setConfig("isRepeatLS", _this.isRepeat);
             _this.setConfig("isRandomLS", _this.isRandom);
         });
 
