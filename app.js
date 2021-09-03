@@ -17,7 +17,7 @@ const previousBtn = $('.btn.btn-prev');
 const nextBtn = $('.btn.btn-next');
 
 
-// Đối tượng chứa toàn bộ chức năng của ứng dụng
+// Đối tượng chứa toàn bộ thông tin và chức năng của ứng dụng
 var app = {
     songs: [
         {
