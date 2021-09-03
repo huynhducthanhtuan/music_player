@@ -1,4 +1,5 @@
 // Khai báo biến
+const PLAYER_STORAGE_KEY = 'HDTT';
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
 const playlist = $('.playlist');
@@ -18,15 +19,6 @@ const nextBtn = $('.btn.btn-next');
 
 // Đối tượng chứa toàn bộ chức năng của ứng dụng
 var app = {
-    currentSongIndex: 0,
-    isRepeat: false,
-    isRandom: false,
-    cdThumbAnimate: cdThumb.animate([
-        { transform: 'rotate(360deg)' },
-    ], { 
-        duration: 10000,
-        iterations: Infinity
-    }),
     songs: [
         {
             "name": "Âm Thầm Bên Em",
@@ -149,16 +141,19 @@ var app = {
             "audio": "./assest/audio/20.mp3"
         }
     ],
+    currentSongIndex: 0,
+    isRepeat: false,
+    isRandom: false,
+    cdThumbAnimate: cdThumb.animate([
+        { transform: 'rotate(360deg)' },
+    ], { 
+        duration: 10000,
+        iterations: Infinity
+    }),
     start() {
         this.renderSong();
-        this.config();
+        this.settingDefaultConfig();
         this.handleDOMEvents();
-    },
-    config() {
-        this.currentSongIndex = 0;
-        progressInput.value = '0';
-        this.toggleActiveTogglePlayBtn('paused');
-        this.handleUpdateCurrentSongInfos();
     },
     renderSong() {
         var htmls = this.songs.map(function (song) {
@@ -176,6 +171,26 @@ var app = {
 
         // Hợp 1 mảng các chuỗi thành 1 chuỗi duy nhất và gán nó cho playlist.innerHTML
         playlist.innerHTML = htmls.join('');
+    },
+    config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
+    setConfig (key, value) {
+        // Thêm 1 cặp key - value vào đối tượng config
+        this.config[key] = value;
+
+        // Lưu cặp key - value đó vào localStorage thông qua PLAYER_STORAGE_KEY
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
+    },
+    settingDefaultConfig() {
+        this.currentSongIndex = this.config.currentSongIndexLS || 0;
+        this.isRepeat = this.config.isRepeatLS || false;
+        this.isRandom = this.config.isRandomLS || false;
+        audio.currentTime = this.config.audioCurrentTimeLS || 0;
+        progressInput.value = this.config.progressInputValueLS || 0;
+
+        // Dừng CD, hiển thị nút pause, xử lí cập nhật những thông tin của bài hát hiện tại
+        this.cdThumbAnimate.pause();
+        this.toggleActiveTogglePlayBtn('paused');
+        this.handleUpdateCurrentSongInfos();
     },
     handleDOMEvents() {
         const _this = this;
@@ -206,6 +221,9 @@ var app = {
                 randomBtn.classList.remove('active');
             }
             _this.isRandom = false;
+
+            // *Lưu trạng thái có nhấn nút phát lại không vào localStorage
+            _this.setConfig("isRepeatLS", _this.isRepeat);
         });
 
         randomBtn.addEventListener('click', function (e) {
@@ -221,14 +239,14 @@ var app = {
                 repeatBtn.classList.remove('active');
             }
             _this.isRepeat = false;
+
+            // *Lưu trạng thái có nhấn nút phát ngẫu nhiên không vào localStorage
+            _this.setConfig("isRandomLS", _this.isRandom);
         });
 
-        // Xử lí cho CD quay
-        _this.cdThumbAnimate.pause();
-
         // Kéo thả input tiến độ bài hát
-        progressInput.addEventListener('change', function(e) {
-            audio.currentTime = audio.duration / 100 * Number(e.target.value)
+        progressInput.addEventListener('input', function(e) {
+            audio.currentTime = audio.duration / 100 * Number(e.target.value);
         });
 
         // Click nút trở lại/tiếp theo để chọn bài hát trước đó/tiếp theo
@@ -296,6 +314,10 @@ var app = {
         audio.addEventListener('timeupdate', function (e) {
             if (audio.duration) {
                 progressInput.value = String(Math.floor(audio.currentTime / audio.duration * 100));
+
+                // *Lưu thời gian và tiến độ 'hiện tại' của bài hát hiện tại vào localStorage
+                _this.setConfig("audioCurrentTimeLS", audio.currentTime);
+                _this.setConfig("progressInputValueLS", progressInput.value);
             }
         });
 
@@ -314,17 +336,29 @@ var app = {
     resumePlayAudio() {
         this.toggleActiveTogglePlayBtn('playing');
         this.cdThumbAnimate.play();
+
+        // *Lưu vị trí của bài hát hiện tại vào localStorage
+        this.setConfig("currentSongIndexLS", this.currentSongIndex);
+
         audio.play();
     },
     playAudio() {
         this.handleUpdateCurrentSongInfos();
         this.toggleActiveTogglePlayBtn('playing');
         this.cdThumbAnimate.play();
+                        
+        // *Lưu vị trí của bài hát hiện tại vào localStorage
+        this.setConfig("currentSongIndexLS", this.currentSongIndex);
+
         audio.play();
     },
     pauseAudio() {
         this.toggleActiveTogglePlayBtn('paused');
         this.cdThumbAnimate.pause();
+                        
+        // *Lưu vị trí của bài hát hiện tại vào localStorage
+        this.setConfig("currentSongIndexLS", this.currentSongIndex);
+
         audio.pause();
     },
     handleUpdateCurrentSongInfos() {
@@ -370,5 +404,5 @@ var app = {
 }
 
 
-// Khởi động ứng dụng
+// Khởi chạy ứng dụng
 app.start();
