@@ -26,6 +26,7 @@ html {
 }
 
 .dashboard {
+    height: 345px;
     padding: 14px;
     background-color: #fff;
     position: fixed;
