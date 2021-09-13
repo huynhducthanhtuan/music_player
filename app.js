@@ -14,9 +14,11 @@ const audio = $('#audio');
 const progressInput = $('#progress');
 const previousBtn = $('.btn.btn-prev');
 const nextBtn = $('.btn.btn-next');
+const LOCALSTORAGE_KEY = 'music-player-key';
 
-// localStorage Key
-const PLAYER_STORAGE_KEY = 'HDTT';
+// Lấy ra 'ngày' hôm nay
+var date = new Date();
+var todayDay = date.getDate();
 
 
 // Đối tượng chứa toàn bộ thông tin và chức năng của ứng dụng
@@ -146,6 +148,7 @@ var app = {
     currentSongIndex: 0,
     isRepeat: false,
     isRandom: false,
+    // Xử lí cho CD quay vô hạn, 10 giây 1 vòng
     cdThumbAnimate: cdThumb.animate([
         { transform: 'rotate(360deg)' },
     ], { 
@@ -174,22 +177,65 @@ var app = {
         // Hợp 1 mảng các chuỗi thành 1 chuỗi duy nhất và gán nó cho playlist.innerHTML
         playlist.innerHTML = htmls.join('');
     },
-    config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
+    config: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)) || {},
     setConfig (key, value) {
         // Thêm 1 cặp key - value vào đối tượng config
         this.config[key] = value;
 
-        // Lưu cặp key - value đó vào localStorage thông qua PLAYER_STORAGE_KEY
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
+        // Lưu cặp key - value đó vào localStorage thông qua LOCALSTORAGE_KEY
+        localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(this.config));
     },
     settingDefaultConfig() {
-        this.currentSongIndex = this.config.currentSongIndexLS || 0;
-        this.isRepeat = this.config.isRepeatLS || false;
-        this.isRandom = this.config.isRandomLS || false;
-        audio.currentTime = this.config.audioCurrentTimeLS || 0;
-        progressInput.value = this.config.progressInputValueLS || 0;
+        // 1. Xét giá trị cho các biến trong localStorage
 
-        // Dừng CD, hiển thị nút pause, xử lí cập nhật những thông tin của bài hát hiện tại
+        // Nếu tồn tại trong localStorage
+        if (this.config.todayDay) {
+
+            // Tự động xóa localStorage sau 1 ngày
+            if (this.config.todayDay != todayDay) {
+
+                // xóa localStorage
+                localStorage.clear();
+
+                // cập nhật giá trị
+                this.config = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)) || {};
+                
+                // cập nhật giá trị mới
+                this.setConfig('todayDay', todayDay);
+            }
+        } 
+        else {
+            // Xét giá trị mặc định
+            this.setConfig('todayDay', todayDay);
+        }
+
+        // Xét giá trị mặc định cho các biến chưa có trong localStorage
+        if (! this.config.audioCurrentTime) {
+            this.setConfig('audioCurrentTime', 0);
+        }
+        if (! this.config.currentSongIndex) {
+            this.setConfig('currentSongIndex', 0);
+        }
+        if (! this.config.isRandom) {
+            this.setConfig('isRandom', false);
+        }
+        if (! this.config.isRepeat) {
+            this.setConfig('isRepeat', false);
+        }
+        if (! this.config.progressInputValue) {
+            this.setConfig('progressInputValue', 0);
+        } 
+        
+        
+        // 2. Thiết lập giá trị cho các biến (lấy giá trị từ localStorage)
+        this.currentSongIndex = this.config.currentSongIndex || 0;
+        this.isRepeat = this.config.isRepeat || false;
+        this.isRandom = this.config.isRandom || false;
+        audio.currentTime = this.config.audioCurrentTime || 0;
+        progressInput.value = this.config.progressInputValue || 0;
+
+
+        // 3. Dừng CD, hiển thị nút pause, xử lí cập nhật những thông tin của bài hát hiện tại
         this.cdThumbAnimate.pause();
         this.toggleActiveTogglePlayBtn('paused');
         repeatBtn.classList.toggle('active', this.isRepeat);
@@ -199,8 +245,9 @@ var app = {
     handleDOMEvents() {
         const _this = this;
 
-        // Click vào nút phát/dừng
+        // Click vào nút phát / dừng
         togglePlayBtn.addEventListener('click', function (e) {
+
             // Nếu thẻ con của togglePlayBtn có chứa class 'icon-play' thì nút phát được click
             if (!! e.target.closest('.icon-play')) {
                 _this.resumePlayAudio();
@@ -211,8 +258,9 @@ var app = {
             }
         });
 
-        // Click vào nút phát lại/phát ngẫu nhiên
+        // Click vào nút phát lại / phát ngẫu nhiên
         repeatBtn.addEventListener('click', function (e) {
+
             // Kiểm tra nút hiện tại có đang active không ?
             var isActive = !! (e.target.closest('.active'));
 
@@ -227,8 +275,8 @@ var app = {
             _this.isRandom = false;
 
             // *Lưu trạng thái các nút phát lại, phát ngẫu nhiên vào localStorage
-            _this.setConfig("isRepeatLS", _this.isRepeat);
-            _this.setConfig("isRandomLS", _this.isRandom);
+            _this.setConfig("isRepeat", _this.isRepeat);
+            _this.setConfig("isRandom", _this.isRandom);
         });
 
         randomBtn.addEventListener('click', function (e) {
@@ -246,8 +294,8 @@ var app = {
             _this.isRepeat = false;
 
             // *Lưu trạng thái các nút phát lại, phát ngẫu nhiên vào localStorage
-            _this.setConfig("isRepeatLS", _this.isRepeat);
-            _this.setConfig("isRandomLS", _this.isRandom);
+            _this.setConfig("isRepeat", _this.isRepeat);
+            _this.setConfig("isRandom", _this.isRandom);
         });
 
         // Kéo thả input tiến độ bài hát
@@ -322,14 +370,15 @@ var app = {
                 progressInput.value = String(Math.floor(audio.currentTime / audio.duration * 100));
 
                 // *Lưu thời gian và tiến độ 'hiện tại' của bài hát hiện tại vào localStorage
-                _this.setConfig("audioCurrentTimeLS", audio.currentTime);
-                _this.setConfig("progressInputValueLS", progressInput.value);
+                _this.setConfig("audioCurrentTime", audio.currentTime);
+                _this.setConfig("progressInputValue", progressInput.value);
             }
         });
 
         // Khi click vào bài hát trong danh sách (playlist) 
         const songsArray = $$('.song');
         songsArray.forEach(function(song, index) {
+
             song.addEventListener('click', function (e) {
                 // Nếu click vào bài hát (ngoại trừ phần option và bài hát hiện tại)
                 if (! e.target.closest('.option') && _this.currentSongIndex != index) {
@@ -344,7 +393,7 @@ var app = {
         this.cdThumbAnimate.play();
 
         // *Lưu vị trí của bài hát hiện tại vào localStorage
-        this.setConfig("currentSongIndexLS", this.currentSongIndex);
+        this.setConfig("currentSongIndex", this.currentSongIndex);
 
         audio.play();
     },
@@ -354,7 +403,7 @@ var app = {
         this.cdThumbAnimate.play();
                         
         // *Lưu vị trí của bài hát hiện tại vào localStorage
-        this.setConfig("currentSongIndexLS", this.currentSongIndex);
+        this.setConfig("currentSongIndex", this.currentSongIndex);
 
         audio.play();
     },
@@ -363,7 +412,7 @@ var app = {
         this.cdThumbAnimate.pause();
                         
         // *Lưu vị trí của bài hát hiện tại vào localStorage
-        this.setConfig("currentSongIndexLS", this.currentSongIndex);
+        this.setConfig("currentSongIndex", this.currentSongIndex);
 
         audio.pause();
     },
