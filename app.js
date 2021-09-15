@@ -1,6 +1,8 @@
 // Khai báo biến
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
+const LOCALSTORAGE_KEY = 'music-player-key';
+
 const playlist = $('.playlist');
 const currentSongName = $('.current-song-name');
 const cd = $('.cd');
@@ -14,7 +16,6 @@ const audio = $('#audio');
 const progressInput = $('#progress');
 const previousBtn = $('.btn.btn-prev');
 const nextBtn = $('.btn.btn-next');
-const LOCALSTORAGE_KEY = 'music-player-key';
 
 // Lấy ra 'ngày' hôm nay
 var date = new Date();
@@ -182,7 +183,7 @@ var app = {
         // Thêm 1 cặp key - value vào đối tượng config
         this.config[key] = value;
 
-        // Lưu cặp key - value đó vào localStorage thông qua LOCALSTORAGE_KEY
+        // Lưu cặp key - value đó vào key LOCALSTORAGE_KEY trong localStorage
         localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(this.config));
     },
     settingDefaultConfig() {
@@ -209,7 +210,7 @@ var app = {
             this.setConfig('todayDay', todayDay);
         }
 
-        // Xét giá trị mặc định cho các biến chưa có trong localStorage
+        // Xét giá trị mặc định cho các biến chưa có trong key LOCALSTORAGE_KEY trong localStorage
         if (! this.config.audioCurrentTime) {
             this.setConfig('audioCurrentTime', 0);
         }
@@ -243,147 +244,158 @@ var app = {
         this.handleUpdateCurrentSongInfos();
     },
     handleDOMEvents() {
-        const _this = this;
 
         // Click vào nút phát / dừng
-        togglePlayBtn.addEventListener('click', function (e) {
+        togglePlayBtn.addEventListener('click', (e) => {
 
             // Nếu thẻ con của togglePlayBtn có chứa class 'icon-play' thì nút phát được click
             if (!! e.target.closest('.icon-play')) {
-                _this.resumePlayAudio();
+                this.resumePlayAudio();
             }
             // Ngược lại, nút dừng được click
             else {
-                _this.pauseAudio();
+                this.pauseAudio();
             }
         });
 
-        // Click vào nút phát lại / phát ngẫu nhiên
-        repeatBtn.addEventListener('click', function (e) {
+        // Click vào nút phát lại
+        repeatBtn.addEventListener('click', (e) => {
 
             // Kiểm tra nút hiện tại có đang active không ?
             var isActive = !! (e.target.closest('.active'));
 
             // Chuyển đổi trạng thái active
             repeatBtn.classList.toggle('active', ! isActive);
-            _this.isRepeat = ! isActive;
+            this.isRepeat = ! isActive;
 
             // Gỡ class 'active' của nút random nếu có
             if (randomBtn.classList.contains('active')) {
                 randomBtn.classList.remove('active');
             }
-            _this.isRandom = false;
+            this.isRandom = false;
 
             // *Lưu trạng thái các nút phát lại, phát ngẫu nhiên vào localStorage
-            _this.setConfig("isRepeat", _this.isRepeat);
-            _this.setConfig("isRandom", _this.isRandom);
+            this.setConfig("isRepeat", this.isRepeat);
+            this.setConfig("isRandom", this.isRandom);
         });
 
-        randomBtn.addEventListener('click', function (e) {
+        // Click vào nút phát ngẫu nhiên
+        randomBtn.addEventListener('click', (e) => {
+
             // Kiểm tra nút hiện tại có đang active không ?
             var isActive = !! (e.target.closest('.active'));
 
             // Chuyển đổi trạng thái active
             randomBtn.classList.toggle('active', ! isActive);
-            _this.isRandom = ! isActive;
+            this.isRandom = ! isActive;
 
             // Gỡ class 'active' của nút repeat nếu có
             if (repeatBtn.classList.contains('active')) {
                 repeatBtn.classList.remove('active');
             }
-            _this.isRepeat = false;
+            this.isRepeat = false;
 
             // *Lưu trạng thái các nút phát lại, phát ngẫu nhiên vào localStorage
-            _this.setConfig("isRepeat", _this.isRepeat);
-            _this.setConfig("isRandom", _this.isRandom);
+            this.setConfig("isRepeat", this.isRepeat);
+            this.setConfig("isRandom", this.isRandom);
         });
 
-        // Kéo thả input tiến độ bài hát
-        progressInput.addEventListener('input', function(e) {
+        // Kéo thả ô tiến độ bài hát
+        progressInput.addEventListener('input', (e) => {
+
+            // Cập nhật thời gian bài hát hiện tại
             audio.currentTime = audio.duration / 100 * Number(e.target.value);
         });
 
-        // Click nút trở lại/tiếp theo để chọn bài hát trước đó/tiếp theo
-        previousBtn.addEventListener('click', function(e) {
+        // Click nút trở lại / tiếp theo để chọn bài hát trước đó / tiếp theo
+        previousBtn.addEventListener('click', () => {
             var newCurrentSongIndex;
 
             // Nếu như có nhấn nút random trước đó
-            if (_this.isRandom) {
+            if (this.isRandom) {
                 do {
                     // Random 1 số ngẫu nhiên từ 0 -> songs.length
-                    newCurrentSongIndex = Math.floor(Math.random() * _this.songs.length);
-                } while (newCurrentSongIndex == _this.currentSongIndex);
-            } else {
-                newCurrentSongIndex = (_this.currentSongIndex == 0) ? 
-                    (_this.songs.length-1) : (_this.currentSongIndex-1);
+                    newCurrentSongIndex = Math.floor(Math.random() * this.songs.length);
+
+                } while (newCurrentSongIndex == this.currentSongIndex);
+            } 
+            else {
+                newCurrentSongIndex = (this.currentSongIndex == 0) ? 
+                    (this.songs.length-1) : (this.currentSongIndex-1);
             }
             
-            // Cập nhật vị trí của bài hát mới
-            _this.currentSongIndex = newCurrentSongIndex;
-            _this.playAudio();
+            // Cập nhật vị trí và phát bài hát mới
+            this.currentSongIndex = newCurrentSongIndex;
+            this.playAudio();
         });
 
-        nextBtn.addEventListener('click', function(e) {
+        nextBtn.addEventListener('click', (e) => {
             var newCurrentSongIndex;
 
             // Nếu như có nhấn nút random trước đó
-            if (_this.isRandom) {
+            if (this.isRandom) {
                 do {
                     // Random 1 số ngẫu nhiên từ 0 -> songs.length
-                    newCurrentSongIndex = Math.floor(Math.random() * _this.songs.length);
-                } while (newCurrentSongIndex == _this.currentSongIndex);
-            } else {
-                newCurrentSongIndex = (_this.currentSongIndex == _this.songs.length-1) ? 
-                    0 : (_this.currentSongIndex+1);
+                    newCurrentSongIndex = Math.floor(Math.random() * this.songs.length);
+
+                } while (newCurrentSongIndex == this.currentSongIndex);
+            } 
+            else {
+                newCurrentSongIndex = (this.currentSongIndex == this.songs.length-1) ? 
+                    0 : (this.currentSongIndex+1);
             }
             
-            // Cập nhật vị trí của bài hát mới
-            _this.currentSongIndex = newCurrentSongIndex;
-            _this.playAudio();
+            // Cập nhật vị trí và phát bài hát mới
+            this.currentSongIndex = newCurrentSongIndex;
+            this.playAudio();
         });
 
         // Tự động chuyển bài hát mới khi hết bài hát cũ
-        audio.addEventListener('ended', function (e) {
+        audio.addEventListener('ended', () => {
             var newCurrentSongIndex;
 
-            if (_this.isRepeat) {
-                newCurrentSongIndex = _this.currentSongIndex;
-            } else {
-                if (_this.isRandom) {
+            if (this.isRepeat) {
+                newCurrentSongIndex = this.currentSongIndex;
+            } 
+            else {
+                if (this.isRandom) {
                     do {
                         // Random một số ngẫu nhiên từ 0 -> songs.length để gán cho biến newCurrentSongIndex
-                        newCurrentSongIndex = Math.floor(Math.random() * _this.songs.length);
-                    } while (newCurrentSongIndex == _this.currentSongIndex);
-                } else {
-                    newCurrentSongIndex = (_this.currentSongIndex == _this.songs.length-1) ? 
-                        0 : (_this.currentSongIndex+1);
+                        newCurrentSongIndex = Math.floor(Math.random() * this.songs.length);
+
+                    } while (newCurrentSongIndex == this.currentSongIndex);
+                } 
+                else {
+                    newCurrentSongIndex = (this.currentSongIndex == this.songs.length-1) ? 
+                        0 : (this.currentSongIndex+1);
                 }
             }
     
-            _this.currentSongIndex = newCurrentSongIndex;
-            _this.playAudio();
+            this.currentSongIndex = newCurrentSongIndex;
+            this.playAudio();
         });
 
         // Khi bài hát phát thì cập nhật thanh tiến độ
-        audio.addEventListener('timeupdate', function (e) {
+        audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
                 progressInput.value = String(Math.floor(audio.currentTime / audio.duration * 100));
 
                 // *Lưu thời gian và tiến độ 'hiện tại' của bài hát hiện tại vào localStorage
-                _this.setConfig("audioCurrentTime", audio.currentTime);
-                _this.setConfig("progressInputValue", progressInput.value);
+                this.setConfig("audioCurrentTime", audio.currentTime);
+                this.setConfig("progressInputValue", progressInput.value);
             }
         });
 
         // Khi click vào bài hát trong danh sách (playlist) 
         const songsArray = $$('.song');
-        songsArray.forEach(function(song, index) {
+        songsArray.forEach((song, index) => {
 
-            song.addEventListener('click', function (e) {
+            song.addEventListener('click', (e) => {
+
                 // Nếu click vào bài hát (ngoại trừ phần option và bài hát hiện tại)
-                if (! e.target.closest('.option') && _this.currentSongIndex != index) {
-                    _this.currentSongIndex = index;
-                    _this.playAudio();
+                if (! e.target.closest('.option') && this.currentSongIndex != index) {
+                    this.currentSongIndex = index;
+                    this.playAudio();
                 }
             })
         });
@@ -426,6 +438,7 @@ var app = {
         audio.src = `${this.songs[this.currentSongIndex].audio}`;
     },
     handleScrollIntoViewAndActiveCurrentSongInPlaylist() {
+
         // 1.Gỡ - thêm class 'active' cho bài hát
         var currentSongInPlaylist = $(`.song:nth-child(${this.currentSongIndex + 1})`);
 
@@ -444,10 +457,12 @@ var app = {
         // Nếu this.currentSongIndex = 5 thì lấy 5 lần chiều cao của 1 bài hát và cộng với 25 
         // để ra được chiều cao cần thiết cho việc cuộn đến vị trí bài hát hiện tại
         var neededHeight = (this.currentSongIndex * aSongElementHeight) + (this.currentSongIndex * 5);
+
         window.scrollTo(0, neededHeight);
     },
     toggleActiveTogglePlayBtn(status) {
-        // status value: 'paused' / 'playing'
+
+        // 2 status value: 'paused' / 'playing'
         if (status == 'playing') {
             playBtn.classList.toggle('active', false);
             pauseBtn.classList.toggle('active', true);
