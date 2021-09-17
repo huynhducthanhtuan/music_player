@@ -1,7 +1,7 @@
 // Khai báo biến
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
-const LOCALSTORAGE_KEY = 'music-player-key';
+const LOCALSTORAGE_KEY = 'music-player';
 
 const playlist = $('.playlist');
 const currentSongName = $('.current-song-name');
