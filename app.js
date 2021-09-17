@@ -245,6 +245,8 @@ var app = {
     },
     handleDOMEvents() {
 
+        // *Từ khóa this trong những arrow function dưới đây sẽ trỏ đến đối tượng app
+
         // Click vào nút phát / dừng
         togglePlayBtn.addEventListener('click', (e) => {
 
