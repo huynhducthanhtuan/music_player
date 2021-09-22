@@ -1,7 +1,6 @@
 // Khai báo biến
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
-const LOCALSTORAGE_KEY = 'music-player';
 
 const playlist = $('.playlist');
 const currentSongName = $('.current-song-name');
@@ -17,9 +16,12 @@ const progressInput = $('#progress');
 const previousBtn = $('.btn.btn-prev');
 const nextBtn = $('.btn.btn-next');
 
+// Key trong localStorage
+const LOCALSTORAGE_KEY = 'music-player';
+
 // Lấy ra 'ngày' hôm nay
-var date = new Date();
-var todayDay = date.getDate();
+var todayDay = (new Date()).getDate();
+
 
 
 // Đối tượng chứa toàn bộ thông tin và chức năng của ứng dụng
@@ -211,9 +213,6 @@ var app = {
         }
 
         // Xét giá trị mặc định cho các biến chưa có trong key LOCALSTORAGE_KEY trong localStorage
-        if (! this.config.audioCurrentTime) {
-            this.setConfig('audioCurrentTime', 0);
-        }
         if (! this.config.currentSongIndex) {
             this.setConfig('currentSongIndex', 0);
         }
@@ -223,17 +222,15 @@ var app = {
         if (! this.config.isRepeat) {
             this.setConfig('isRepeat', false);
         }
-        if (! this.config.progressInputValue) {
-            this.setConfig('progressInputValue', 0);
-        } 
         
         
         // 2. Thiết lập giá trị cho các biến (lấy giá trị từ localStorage)
         this.currentSongIndex = this.config.currentSongIndex || 0;
         this.isRepeat = this.config.isRepeat || false;
         this.isRandom = this.config.isRandom || false;
-        audio.currentTime = this.config.audioCurrentTime || 0;
-        progressInput.value = this.config.progressInputValue || 0;
+        // Lấy giá trị mặc định
+        audio.currentTime = 0;
+        progressInput.value = 0;
 
 
         // 3. Dừng CD, hiển thị nút pause, xử lí cập nhật những thông tin của bài hát hiện tại
@@ -381,10 +378,6 @@ var app = {
         audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
                 progressInput.value = String(Math.floor(audio.currentTime / audio.duration * 100));
-
-                // *Lưu thời gian và tiến độ 'hiện tại' của bài hát hiện tại vào localStorage
-                this.setConfig("audioCurrentTime", audio.currentTime);
-                this.setConfig("progressInputValue", progressInput.value);
             }
         });
 
