@@ -115,6 +115,7 @@ header {
 }
 
 .progress {
+    display: block;
     width: 100%;
     -webkit-appearance: none;
     height: 6px;
